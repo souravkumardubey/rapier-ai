@@ -5,7 +5,22 @@
 
 """rapier-ai — context management package."""
 
-# Phase 4 will implement:
-# - ContextEngine
-# - Compactor (5-tier)
-# - History
+from rapier.context.compactor import (
+    CompactionCircuitBreaker,
+    collapse_tool_outputs,
+    microcompact,
+    reactive_compact,
+    snip_old_results,
+)
+from rapier.context.engine import ContextEngine
+from rapier.context.history import MessageHistory
+
+__all__ = [
+    "CompactionCircuitBreaker",
+    "ContextEngine",
+    "MessageHistory",
+    "collapse_tool_outputs",
+    "microcompact",
+    "reactive_compact",
+    "snip_old_results",
+]
