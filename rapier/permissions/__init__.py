@@ -5,7 +5,22 @@
 
 """rapier-ai — permissions package."""
 
-# Phase 3 will implement:
-# - PermissionGate
-# - PermissionRules
-# - BashAnalyzer
+from rapier.permissions.bash_analyzer import BashAnalyzer, BashAnalysis, RiskLevel
+from rapier.permissions.gate import (
+    PermissionGate,
+    PermissionMode,
+    PermissionResult,
+    PermissionVerdict,
+)
+from rapier.permissions.rules import PermissionRules
+
+__all__ = [
+    "BashAnalyzer",
+    "BashAnalysis",
+    "RiskLevel",
+    "PermissionGate",
+    "PermissionMode",
+    "PermissionResult",
+    "PermissionVerdict",
+    "PermissionRules",
+]
