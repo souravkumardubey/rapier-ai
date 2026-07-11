@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from rapier.llm.types import LLMResponse, Message, ToolCall, ToolResult, Usage
+from rapier.permissions.gate import PermissionGate, PermissionVerdict
 
 
 @dataclass
@@ -31,6 +32,7 @@ async def agent_loop(
     max_iterations: int = 50,
     on_tool_call: Callable | None = None,
     on_tool_result: Callable | None = None,
+    permission_gate: PermissionGate | None = None,
 ) -> AgentResult:
     """Run the agent loop — the core while(true) that drives everything.
 
@@ -87,6 +89,26 @@ async def agent_loop(
                     is_error=True,
                 )
             else:
+                # Check permissions before execution
+                if permission_gate:
+                    perm = await permission_gate.check(tool_call.name, tool_call.input)
+                    if perm.verdict == PermissionVerdict.DENIED:
+                        result = ToolResult(
+                            tool_call_id=tool_call.id,
+                            content=f"Permission denied: {perm.reason}",
+                            is_error=True,
+                        )
+                        if on_tool_result:
+                            await on_tool_result(result)
+                        messages.append(
+                            Message(
+                                role="tool",
+                                content=result.content,
+                                tool_call_id=result.tool_call_id,
+                            )
+                        )
+                        continue
+
                 try:
                     output = await tool.execute(tool_call.input)
                     result = ToolResult(tool_call_id=tool_call.id, content=output)
