@@ -1,19 +1,83 @@
-# rapier-ai
+<div align="center">
 
-A loop-engineered coding agent — set a goal, watch it iterate.
+# ⚔️ rapier-ai
 
-## What is rapier-ai?
+**A loop-engineered coding agent — set a goal, watch it iterate.**
 
-rapier-ai is a Python coding agent designed around **loop engineering principles**. Like the weaving rapier — a thin, precise shuttle that carries thread back and forth across a loom — Rapier carries your intent through iterative loops of code → verify → refine until the goal is met.
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-9%20passing-brightgreen.svg)](tests/)
+[![Status](https://img.shields.io/badge/status-Phase%202%20complete-yellow.svg)](docs/phases.md)
 
-## Features
+---
 
-- **Goal-based loops** — Set an objective, agent iterates until verified complete
-- **Maker/Checker separation** — A different model verifies the coder's work
-- **Token-efficient context** — Rewrites history instead of replaying full transcript
-- **Persistent memory** — Knowledge graph that survives across sessions
-- **Safety by default** — Deny-first permission system with AST-based bash analysis
-- **Multi-provider** — Works with Anthropic, OpenAI, or any compatible API
+Like the weaving rapier — a thin, precise shuttle that carries thread back and forth across a loom — **rapier-ai** carries your intent through iterative loops of **code → verify → refine** until the goal is met.
+
+</div>
+
+---
+
+## Why rapier-ai?
+
+Existing coding agents operate in one-shot mode: you prompt, they respond, done. rapier-ai operates in **goal loops** — you set an objective, and the agent iterates through planning, coding, verification, and refinement until the goal is provably complete.
+
+| Feature | Claude Code | Aider | Cursor | **rapier-ai** |
+|---|:---:|:---:|:---:|:---:|
+| Loop engineering core | ✗ | ✗ | ✗ | **✓** |
+| Maker/Checker split | subagent | ✗ | ✗ | **different model** |
+| Token-efficient context | ✗ | ✗ | partial | **✓ + knowledge graph** |
+| Persistent memory | CLAUDE.md | ✗ | ✗ | **knowledge graph** |
+| Provider lock-in | Anthropic | any | OpenAI | **any OpenAI-compatible** |
+| Language | TypeScript | Python | TypeScript | **Python** |
+
+---
+
+## How It Works
+
+### The ReACT Loop
+
+Every interaction follows the **Reason → Act → Observe** cycle:
+
+```mermaid
+flowchart LR
+    A[User Input] --> B{LLM Reasons}
+    B -->|Text response| C[Return to User]
+    B -->|Tool calls| D[Execute Tools]
+    D --> E[Observe Results]
+    E --> B
+```
+
+### Goal-Based Iteration
+
+Set a goal, and rapier-ai iterates until verified complete:
+
+```mermaid
+flowchart TD
+    G[Set Goal] --> R[Research Phase]
+    R --> C[Coder Implements]
+    C --> V{Verifier Reviews}
+    V -->|Pass| D[Done ✓]
+    V -->|Fail| F[Coder Fixes]
+    F --> V
+    V -->|Budget exhausted| X[Stop — Report to User]
+```
+
+### Multi-Agent Architecture
+
+Hub-and-spoke model — coordinator holds full context, workers get minimal:
+
+```mermaid
+flowchart TD
+    U[User] --> CO[Coordinator<br/><i>Opus</i>]
+    CO -->|research task| RE[Researcher<br/><i>Haiku</i>]
+    CO -->|code task| CD[Coder<br/><i>Sonnet</i>]
+    CD -->|verify| VE[Verifier<br/><i>Opus</i>]
+    VE -->|pass| CO
+    VE -->|fail| CD
+    RE --> CO
+```
+
+---
 
 ## Quick Start
 
@@ -27,30 +91,79 @@ export ANTHROPIC_API_KEY=sk-ant-...
 # Start the REPL
 rapier
 
-# Or set a goal
+# Or set a goal and watch it iterate
 rapier --goal "add error handling to the API routes"
+
+# Use OpenAI instead
+rapier --provider openai --model gpt-4o
 ```
+
+---
+
+## Project Status
+
+```mermaid
+gantt
+    title Build Progress
+    dateFormat  YYYY-MM-DD
+    section Phase 1 — Core Loop
+    LLM Client + REPL           :done, p1, 2025-01-01, 2d
+    section Phase 2 — Tools
+    8 Tools + Registry          :done, p2, after p1, 2d
+    section Phase 3 — Permissions
+    Permission Gate             :active, p3, after p2, 2d
+    section Phase 4 — Context
+    5-Tier Compaction           :p4, after p3, 3d
+    section Phase 5 — Goals
+    Goal Engine + Verifier      :p5, after p4, 3d
+    section Phase 6 — Multi-Agent
+    Coordinator + Workers       :p6, after p5, 3d
+    section Phase 7 — Memory
+    Knowledge Graph + SQLite    :p7, after p6, 3d
+    section Phase 8 — Ship
+    TUI + Tests + PyPI          :p8, after p7, 3d
+```
+
+| Phase | Status | LOC | Files |
+|---|---|---|---|
+| 1. Core Loop + LLM Client | ✅ Complete | ~400 | 10 |
+| 2. Tool System | ✅ Complete | ~650 | 19 |
+| 3. Permission System | 🔲 Pending | — | — |
+| 4. Context Engine | 🔲 Pending | — | — |
+| 5. Goal Engine | 🔲 Pending | — | — |
+| 6. Multi-Agent System | 🔲 Pending | — | — |
+| 7. Memory System | 🔲 Pending | — | — |
+| 8. Polish + Ship | 🔲 Pending | — | — |
+
+---
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    UI[REPL / CLI] --> PG[Permission Gate]
+    PG --> OL[Orchestrator Loop]
+    OL --> ME[Memory Recall]
+    OL --> CT[Context Engine]
+    CT --> LLM[LLM Client]
+    LLM --> |Anthropic| A[Claude]
+    LLM --> |OpenAI| O[GPT]
+    LLM --> |response| OL
+    OL --> |tool calls| TS[Tool System]
+    TS --> RF[read_file]
+    TS --> WF[write_file]
+    TS --> EF[edit_file]
+    TS --> BA[bash]
+    TS --> GR[grep]
+    TS --> GL[glob]
+    TS --> WF2[web_fetch]
+    TS --> TK[task]
+    OL --> |verify| VE[Verifier Agent]
+    VE --> |extract facts| MEM[Knowledge Graph]
+    MEM --> SQ[(SQLite)]
 ```
-┌──────────────────────────────────────┐
-│       ORCHESTRATOR (Main Loop)       │
-│  while (!goal_complete) {            │
-│    1. RECALL  — memory + context     │
-│    2. PLAN    — next action          │
-│    3. ACT     — dispatch to agent    │
-│    4. VERIFY  — checker reviews      │
-│    5. LEARN   — extract facts        │
-│  }                                   │
-└──────────┬───────────────────────────┘
-           │
-    ┌──────┼──────┐
-    ▼      ▼      ▼
-┌──────┐┌──────┐┌──────┐
-│Coder ││Resrch││Verifr│
-└──────┘└──────┘└──────┘
-```
+
+---
 
 ## Development
 
@@ -59,28 +172,56 @@ rapier --goal "add error handling to the API routes"
 git clone https://github.com/souravkumardubey/rapier-ai.git
 cd rapier-ai
 
-# Install dev dependencies
-pip install -e ".[dev]"
+# Create venv and install
+uv venv --python 3.14
+source .venv/bin/activate
+uv pip install -e ".[dev]"
 
 # Run tests
 pytest tests/
 
-# Lint
+# Lint + format
 ruff check .
-
-# Format
 ruff format .
+
+# Type check
+mypy rapier/
 ```
+
+---
 
 ## Documentation
 
-- [Project Plan](docs/project-plan.md)
-- [Architecture](docs/architecture.md)
-- [Build Phases](docs/phases.md)
-- [Components](docs/components.md)
-- [Development Workflow](docs/workflow.md)
-- [Roadmap](docs/roadmap.md)
+| Doc | Description |
+|---|---|
+| [Project Plan](docs/project-plan.md) | Vision, differentiators, success criteria |
+| [Architecture](docs/architecture.md) | System design, data flow, security model |
+| [Build Phases](docs/phases.md) | 8 phases with file lists and interfaces |
+| [Components](docs/components.md) | Deep-dive into each component |
+| [Workflow](docs/workflow.md) | Git strategy, commit conventions, testing |
+| [Roadmap](docs/roadmap.md) | Timeline, milestones, risk assessment |
+
+---
+
+## Built With
+
+- [Anthropic SDK](https://github.com/anthropics/anthropic-sdk-python) — Claude API
+- [OpenAI SDK](https://github.com/openai/openai-python) — GPT API
+- [Rich](https://github.com/Textualize/rich) — Terminal formatting
+- [Click](https://github.com/pallets/click) — CLI framework
+- [tiktoken](https://github.com/openai/tiktoken) — Token counting
+- [sentence-transformers](https://github.com/UKPLab/sentence-transformers) — Local embeddings
+
+---
 
 ## License
 
-MIT
+[MIT](LICENSE) — do whatever you want.
+
+---
+
+<div align="center">
+
+**Built with precision. Iterated with purpose.**
+
+</div>
