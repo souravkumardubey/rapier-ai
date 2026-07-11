@@ -6,8 +6,6 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-9%20passing-brightgreen.svg)](tests/)
-[![Status](https://img.shields.io/badge/status-Phase%202%20complete-yellow.svg)](docs/phases.md)
 
 ---
 
@@ -100,43 +98,6 @@ rapier --provider openai --model gpt-4o
 
 ---
 
-## Project Status
-
-```mermaid
-gantt
-    title Build Progress
-    dateFormat  YYYY-MM-DD
-    section Phase 1 — Core Loop
-    LLM Client + REPL           :done, p1, 2025-01-01, 2d
-    section Phase 2 — Tools
-    8 Tools + Registry          :done, p2, after p1, 2d
-    section Phase 3 — Permissions
-    Permission Gate             :active, p3, after p2, 2d
-    section Phase 4 — Context
-    5-Tier Compaction           :p4, after p3, 3d
-    section Phase 5 — Goals
-    Goal Engine + Verifier      :p5, after p4, 3d
-    section Phase 6 — Multi-Agent
-    Coordinator + Workers       :p6, after p5, 3d
-    section Phase 7 — Memory
-    Knowledge Graph + SQLite    :p7, after p6, 3d
-    section Phase 8 — Ship
-    TUI + Tests + PyPI          :p8, after p7, 3d
-```
-
-| Phase | Status | LOC | Files |
-|---|---|---|---|
-| 1. Core Loop + LLM Client | ✅ Complete | ~400 | 10 |
-| 2. Tool System | ✅ Complete | ~650 | 19 |
-| 3. Permission System | 🔲 Pending | — | — |
-| 4. Context Engine | 🔲 Pending | — | — |
-| 5. Goal Engine | 🔲 Pending | — | — |
-| 6. Multi-Agent System | 🔲 Pending | — | — |
-| 7. Memory System | 🔲 Pending | — | — |
-| 8. Polish + Ship | 🔲 Pending | — | — |
-
----
-
 ## Architecture
 
 ```mermaid
@@ -187,19 +148,6 @@ ruff format .
 # Type check
 mypy rapier/
 ```
-
----
-
-## Documentation
-
-| Doc | Description |
-|---|---|
-| [Project Plan](docs/project-plan.md) | Vision, differentiators, success criteria |
-| [Architecture](docs/architecture.md) | System design, data flow, security model |
-| [Build Phases](docs/phases.md) | 8 phases with file lists and interfaces |
-| [Components](docs/components.md) | Deep-dive into each component |
-| [Workflow](docs/workflow.md) | Git strategy, commit conventions, testing |
-| [Roadmap](docs/roadmap.md) | Timeline, milestones, risk assessment |
 
 ---
 
