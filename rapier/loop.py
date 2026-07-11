@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+from rapier.context.engine import ContextEngine
+from rapier.context.history import MessageHistory
 from rapier.llm.types import LLMResponse, Message, ToolCall, ToolResult, Usage
 from rapier.permissions.gate import PermissionGate, PermissionVerdict
 
@@ -33,6 +35,7 @@ async def agent_loop(
     on_tool_call: Callable | None = None,
     on_tool_result: Callable | None = None,
     permission_gate: PermissionGate | None = None,
+    context_engine: ContextEngine | None = None,
 ) -> AgentResult:
     """Run the agent loop — the core while(true) that drives everything.
 
@@ -41,17 +44,31 @@ async def agent_loop(
     3. If no tool calls → return response
     4. Repeat until done or max iterations
     """
-    messages: list[Message] = [Message(role="user", content=prompt)]
+    history = MessageHistory(system_prompt=system_prompt)
+    history.append(Message(role="user", content=prompt))
     total_usage = Usage(input_tokens=0, output_tokens=0)
 
     for i in range(max_iterations):
+        # Get messages for LLM (with compaction if context engine provided)
+        if context_engine:
+            messages = context_engine.get_messages_for_llm(history)
+        else:
+            messages = history.to_list()
+
         # Call LLM
         tool_defs = [t.get_schema() for t in tools.values()] if tools else []
-        response: LLMResponse = await llm.chat(
-            messages=messages,
-            tools=tool_defs,
-            system=system_prompt,
-        )
+        try:
+            response: LLMResponse = await llm.chat(
+                messages=messages,
+                tools=tool_defs,
+                system=system_prompt,
+            )
+        except Exception as e:
+            # Handle context length errors with reactive compaction
+            if context_engine and "context_length" in str(e).lower():
+                history = context_engine.handle_context_error(history)
+                continue
+            raise
 
         # Track usage
         total_usage.input_tokens += response.usage.input_tokens
@@ -67,7 +84,7 @@ async def agent_loop(
             )
 
         # Append assistant message with tool calls
-        messages.append(
+        history.append(
             Message(
                 role="assistant",
                 content=response.content,
@@ -100,7 +117,7 @@ async def agent_loop(
                         )
                         if on_tool_result:
                             await on_tool_result(result)
-                        messages.append(
+                        history.append(
                             Message(
                                 role="tool",
                                 content=result.content,
@@ -123,7 +140,7 @@ async def agent_loop(
                 await on_tool_result(result)
 
             # Append tool result
-            messages.append(
+            history.append(
                 Message(
                     role="tool",
                     content=result.content,
