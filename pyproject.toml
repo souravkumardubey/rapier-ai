@@ -8,16 +8,9 @@ version = "0.1.0"
 description = "A loop-engineered coding agent — set a goal, watch it iterate"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4"
 authors = [
-    {name = "SoDubey"}
-]
-topics = [
-    "ai",
-    "coding-agent",
-    "llm",
-    "agentic-ai",
-    "developer-tools",
+    {name = "souravdubey"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -53,9 +46,9 @@ dev = [
 rapier = "rapier.main:cli"
 
 [project.urls]
-Homepage = "https://github.com/SoDubey/rapier-ai"
-Repository = "https://github.com/SoDubey/rapier-ai"
-Issues = "https://github.com/SoDubey/rapier-ai/issues"
+Homepage = "https://github.com/souravdubey/rapier-ai"
+Repository = "https://github.com/souravdubey/rapier-ai"
+Issues = "https://github.com/souravdubey/rapier-ai/issues"
 
 [tool.ruff]
 target-version = "py311"

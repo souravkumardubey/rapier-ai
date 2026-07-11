@@ -56,7 +56,7 @@ rapier --goal "add error handling to the API routes"
 
 ```bash
 # Clone
-git clone https://github.com/SoDubey/rapier-ai.git
+git clone https://github.com/souravdubey/rapier-ai.git
 cd rapier-ai
 
 # Install dev dependencies
