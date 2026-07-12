@@ -157,18 +157,23 @@ async def _run_goal(
     max_turns: int,
     no_tools: bool,
 ) -> None:
-    """Run autonomous goal loop with full agent loop."""
+    """Run autonomous goal loop with budget tracking."""
     from rapier.llm import get_client
+    from rapier.goals.engine import GoalEngine
 
     llm = get_client(provider, model)
     tools = {} if no_tools else get_all_tools()
     system_prompt = SYSTEM_PROMPT.format(cwd=Path.cwd())
 
-    console.print(f"\n[bold]Goal:[/bold] {goal}")
-    console.print(f"[dim]Budget: {budget} | Max turns: {max_turns} | Tools: {'off' if no_tools else 'on'}[/dim]")
+    # Create and track the goal
+    goal_engine = GoalEngine()
+    g = goal_engine.create(objective=goal, budget=budget)
+
+    console.print(f"\n[bold]Goal:[/bold] {g.objective}")
+    console.print(f"[dim]Budget: {g.budget} | Max turns: {max_turns} | Tools: {'off' if no_tools else 'on'}[/dim]")
     console.print("[dim]Starting loop...[/dim]\n")
 
-    # Callbacks for live display
+    # Callbacks for live display + budget tracking
     async def on_tool_call(tc: ToolCall) -> None:
         console.print(f"  [dim]→ calling {tc.name}({tc.input})[/dim]")
 
@@ -188,16 +193,23 @@ async def _run_goal(
             on_tool_result=on_tool_result,
         )
 
+        # Record final usage
+        goal_engine.record_usage(g.id, result.usage.input_tokens, result.usage.output_tokens)
+        for _ in range(result.iterations):
+            goal_engine.record_turn(g.id)
+
+        # Mark goal complete
+        goal_engine.complete(g.id, result=result.content)
+
         console.print("\n[bold green]═══ Goal Complete ═══[/bold green]")
         if result.content:
             console.print(result.content)
-        console.print(
-            f"[dim]Total: {result.usage.input_tokens} in / {result.usage.output_tokens} out / "
-            f"{result.iterations} turns[/dim]"
-        )
+        console.print(f"[dim]{goal_engine.format_status(g.id)}[/dim]")
 
     except Exception as e:
+        goal_engine.fail(g.id, reason=str(e))
         console.print(f"\n[red]Error: {e}[/red]")
+        console.print(f"[dim]{goal_engine.format_status(g.id)}[/dim]")
 
 
 def _show_help() -> None:
