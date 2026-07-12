@@ -5,7 +5,16 @@
 
 """rapier-ai — goals package."""
 
-# Phase 5 will implement:
-# - GoalEngine
-# - Budget
-# - GoalVerifier
+from rapier.goals.budget import BUDGETS, Budget
+from rapier.goals.engine import Goal, GoalEngine, GoalStatus
+from rapier.goals.verifier import GoalVerifier, VerificationResult
+
+__all__ = [
+    "BUDGETS",
+    "Budget",
+    "Goal",
+    "GoalEngine",
+    "GoalStatus",
+    "GoalVerifier",
+    "VerificationResult",
+]
