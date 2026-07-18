@@ -7,12 +7,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from rapier.context.engine import ContextEngine
 from rapier.context.history import MessageHistory
-from rapier.llm.types import LLMResponse, Message, ToolCall, ToolResult, Usage
+from rapier.llm.types import LLMResponse, Message, ToolResult, Usage
 from rapier.permissions.gate import PermissionGate, PermissionVerdict
 
 
@@ -51,7 +52,7 @@ async def agent_loop(
     for i in range(max_iterations):
         # Get messages for LLM (with compaction if context engine provided)
         if context_engine:
-            messages = context_engine.get_messages_for_llm(history)
+            messages = await context_engine.get_messages_for_llm(history)
         else:
             messages = history.to_list()
 
@@ -66,7 +67,7 @@ async def agent_loop(
         except Exception as e:
             # Handle context length errors with reactive compaction
             if context_engine and "context_length" in str(e).lower():
-                history = context_engine.handle_context_error(history)
+                history = await context_engine.handle_context_error(history)
                 continue
             raise
 
