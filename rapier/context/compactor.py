@@ -12,7 +12,6 @@ from typing import Any
 
 from rapier.llm.types import Message
 
-
 # ── Tier 1: Snip ────────────────────────────────────────────────────
 
 
@@ -130,6 +129,50 @@ def format_messages_for_summary(messages: list[Message]) -> str:
                 content = content[:200] + "..."
             lines.append(f"Tool result: {content}")
     return "\n".join(lines)
+
+
+async def autocompact(
+    messages: list[Message],
+    llm: Any,
+    max_summary_chars: int = 8000,
+) -> list[Message]:
+    """Summarize conversation history using LLM.
+
+    Tier 4 — Medium cost. Produces a coherent summary of the conversation
+    so the agent retains context without keeping every message.
+    """
+    from rapier.llm.types import Message as LLMMessage
+
+    formatted = format_messages_for_summary(messages)
+
+    # Keep system message if present
+    system_msg = messages[0] if messages and messages[0].role == "system" else None
+
+    summary_prompt = (
+        f"Summarize the following conversation concisely.\n"
+        f"Focus on: key decisions made, files modified, current state of work, "
+        f"and any pending tasks.\n"
+        f"Keep the summary under {max_summary_chars} characters.\n\n"
+        f"Conversation:\n{formatted}"
+    )
+
+    response = await llm.chat(
+        messages=[LLMMessage(role="user", content=summary_prompt)],
+        tools=[],
+    )
+
+    summary_content = response.content or "[Summary generation failed]"
+
+    result: list[Message] = []
+    if system_msg:
+        result.append(system_msg)
+    result.append(
+        Message(
+            role="assistant",
+            content=f"[Conversation summary]\n{summary_content}",
+        )
+    )
+    return result
 
 
 # ── Tier 5: Reactive ────────────────────────────────────────────────
