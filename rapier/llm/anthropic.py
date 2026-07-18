@@ -10,7 +10,13 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from rapier.llm.retry import with_retry
 from rapier.llm.types import LLMResponse, Message, ToolCall, ToolDefinition, Usage
+
+# Retryable Anthropic errors
+_RETRYABLE_ERRORS: tuple[type[Exception], ...] = (
+    Exception,  # Anthropic SDK raises various APIError subclasses
+)
 
 
 class AnthropicClient:
@@ -30,50 +36,54 @@ class AnthropicClient:
         model: str | None = None,
     ) -> LLMResponse:
         """Send a chat request to Anthropic Claude."""
-        import anthropic
 
-        client = anthropic.AsyncAnthropic(api_key=self.api_key)
+        async def _call() -> LLMResponse:
+            import anthropic
 
-        # Convert messages
-        api_messages = [m.to_dict() for m in messages]
+            client = anthropic.AsyncAnthropic(api_key=self.api_key)
 
-        # Convert tools
-        api_tools = [t.to_dict() for t in tools] if tools else None
+            # Convert messages
+            api_messages = [m.to_dict() for m in messages]
 
-        # Make request
-        kwargs: dict[str, Any] = {
-            "model": model or self.model,
-            "max_tokens": 8192,
-            "messages": api_messages,
-        }
-        if system:
-            kwargs["system"] = system
-        if api_tools:
-            kwargs["tools"] = api_tools
+            # Convert tools
+            api_tools = [t.to_dict() for t in tools] if tools else None
 
-        response = await client.messages.create(**kwargs)
+            # Make request
+            kwargs: dict[str, Any] = {
+                "model": model or self.model,
+                "max_tokens": 8192,
+                "messages": api_messages,
+            }
+            if system:
+                kwargs["system"] = system
+            if api_tools:
+                kwargs["tools"] = api_tools
 
-        # Parse response
-        content = None
-        tool_calls: list[ToolCall] = []
+            response = await client.messages.create(**kwargs)
 
-        for block in response.content:
-            if block.type == "text":
-                content = block.text
-            elif block.type == "tool_use":
-                tool_calls.append(
-                    ToolCall(
-                        id=block.id,
-                        name=block.name,
-                        input=block.input,
+            # Parse response
+            content = None
+            tool_calls: list[ToolCall] = []
+
+            for block in response.content:
+                if block.type == "text":
+                    content = block.text
+                elif block.type == "tool_use":
+                    tool_calls.append(
+                        ToolCall(
+                            id=block.id,
+                            name=block.name,
+                            input=block.input,
+                        )
                     )
-                )
 
-        return LLMResponse(
-            content=content,
-            tool_calls=tool_calls,
-            usage=Usage(
-                input_tokens=response.usage.input_tokens,
-                output_tokens=response.usage.output_tokens,
-            ),
-        )
+            return LLMResponse(
+                content=content,
+                tool_calls=tool_calls,
+                usage=Usage(
+                    input_tokens=response.usage.input_tokens,
+                    output_tokens=response.usage.output_tokens,
+                ),
+            )
+
+        return await with_retry(_call, retryable_errors=_RETRYABLE_ERRORS)

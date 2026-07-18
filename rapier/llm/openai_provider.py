@@ -11,7 +11,13 @@ import json
 import os
 from typing import Any
 
+from rapier.llm.retry import with_retry
 from rapier.llm.types import LLMResponse, Message, ToolCall, ToolDefinition, Usage
+
+# Retryable OpenAI errors
+_RETRYABLE_ERRORS: tuple[type[Exception], ...] = (
+    Exception,  # OpenAI SDK raises various APIError subclasses
+)
 
 
 class OpenAIClient:
@@ -31,55 +37,59 @@ class OpenAIClient:
         model: str | None = None,
     ) -> LLMResponse:
         """Send a chat request to OpenAI."""
-        import openai
 
-        client = openai.AsyncOpenAI(api_key=self.api_key)
+        async def _call() -> LLMResponse:
+            import openai
 
-        # Convert messages
-        api_messages: list[dict[str, Any]] = []
-        if system:
-            api_messages.append({"role": "system", "content": system})
-        for m in messages:
-            api_messages.append(m.to_dict())
+            client = openai.AsyncOpenAI(api_key=self.api_key)
 
-        # Convert tools
-        api_tools = [t.to_dict() for t in tools] if tools else None
+            # Convert messages
+            api_messages: list[dict[str, Any]] = []
+            if system:
+                api_messages.append({"role": "system", "content": system})
+            for m in messages:
+                api_messages.append(m.to_dict())
 
-        # Make request
-        kwargs: dict[str, Any] = {
-            "model": model or self.model,
-            "messages": api_messages,
-        }
-        if api_tools:
-            kwargs["tools"] = api_tools
+            # Convert tools
+            api_tools = [t.to_dict() for t in tools] if tools else None
 
-        response = await client.chat.completions.create(**kwargs)
-        choice = response.choices[0]
+            # Make request
+            kwargs: dict[str, Any] = {
+                "model": model or self.model,
+                "messages": api_messages,
+            }
+            if api_tools:
+                kwargs["tools"] = api_tools
 
-        # Parse response
-        content = choice.message.content
-        tool_calls: list[ToolCall] = []
+            response = await client.chat.completions.create(**kwargs)
+            choice = response.choices[0]
 
-        if choice.message.tool_calls:
-            for tc in choice.message.tool_calls:
-                args = json.loads(tc.function.arguments) if tc.function.arguments else {}
-                tool_calls.append(
-                    ToolCall(
-                        id=tc.id,
-                        name=tc.function.name,
-                        input=args,
+            # Parse response
+            content = choice.message.content
+            tool_calls: list[ToolCall] = []
+
+            if choice.message.tool_calls:
+                for tc in choice.message.tool_calls:
+                    args = json.loads(tc.function.arguments) if tc.function.arguments else {}
+                    tool_calls.append(
+                        ToolCall(
+                            id=tc.id,
+                            name=tc.function.name,
+                            input=args,
+                        )
                     )
+
+            usage = Usage()
+            if response.usage:
+                usage = Usage(
+                    input_tokens=response.usage.prompt_tokens,
+                    output_tokens=response.usage.completion_tokens,
                 )
 
-        usage = Usage()
-        if response.usage:
-            usage = Usage(
-                input_tokens=response.usage.prompt_tokens,
-                output_tokens=response.usage.completion_tokens,
+            return LLMResponse(
+                content=content,
+                tool_calls=tool_calls,
+                usage=usage,
             )
 
-        return LLMResponse(
-            content=content,
-            tool_calls=tool_calls,
-            usage=usage,
-        )
+        return await with_retry(_call, retryable_errors=_RETRYABLE_ERRORS)
