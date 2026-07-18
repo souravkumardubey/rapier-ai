@@ -253,30 +253,32 @@ class TestMessageHistory:
 
 class TestContextEngine:
     def test_should_compact_when_over_threshold(self):
-        engine = ContextEngine(max_input_tokens=100, chars_per_token=4.0)
+        engine = ContextEngine(max_input_tokens=100, chars_per_token=4.0, use_tiktoken=False)
         h = MessageHistory()
         # 500 chars = 125 tokens > 80% of 100 = 80
         h.append(_user_msg("x" * 500))
         assert engine.should_compact(h) is True
 
     def test_should_not_compact_when_under_threshold(self):
-        engine = ContextEngine(max_input_tokens=1000, chars_per_token=4.0)
+        engine = ContextEngine(max_input_tokens=1000, chars_per_token=4.0, use_tiktoken=False)
         h = MessageHistory()
         h.append(_user_msg("hello"))
         assert engine.should_compact(h) is False
 
-    def test_compact_applies_tiers(self):
-        engine = ContextEngine(max_input_tokens=10000)
+    @pytest.mark.asyncio
+    async def test_compact_applies_tiers(self):
+        engine = ContextEngine(max_input_tokens=10000, use_tiktoken=False)
         h = MessageHistory()
         h.append(_user_msg("hello"))
         h.append(_tool_msg("x" * 5000))
         h.append(_assistant_msg("done"))
-        result = engine.compact(h)
+        result = await engine.compact(h)
         # Tool output should be truncated
         assert len(result[1].content) < 5000
 
-    def test_circuit_breaker_opens(self):
-        engine = ContextEngine()
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_opens(self):
+        engine = ContextEngine(use_tiktoken=False)
         engine.circuit_breaker.record_failure()
         engine.circuit_breaker.record_failure()
         engine.circuit_breaker.record_failure()
@@ -285,16 +287,26 @@ class TestContextEngine:
         h = MessageHistory()
         h.append(_user_msg("test"))
         original_len = len(h)
-        engine.compact(h)
+        await engine.compact(h)
         assert len(h) == original_len  # unchanged
 
-    def test_handle_context_error(self):
-        engine = ContextEngine()
+    @pytest.mark.asyncio
+    async def test_handle_context_error(self):
+        engine = ContextEngine(use_tiktoken=False)
         h = MessageHistory()
         for i in range(20):
             h.append(_user_msg(f"msg{i}"))
-        result = engine.handle_context_error(h)
+        result = await engine.handle_context_error(h)
         assert len(result) < 20
+
+    def test_tiktoken_fallback_when_unavailable(self):
+        """Engine falls back to heuristic when tiktoken is unavailable."""
+        engine = ContextEngine(max_input_tokens=1000, use_tiktoken=True)
+        # _token_counter may be None if tiktoken not installed, that's fine
+        h = MessageHistory()
+        h.append(_user_msg("hello"))
+        # Should still work regardless of tiktoken availability
+        assert engine.should_compact(h) is False
 
 
 # ── Integration: loop.py with context engine ────────────────────────
