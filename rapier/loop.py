@@ -37,6 +37,7 @@ async def agent_loop(
     on_tool_result: Callable | None = None,
     permission_gate: PermissionGate | None = None,
     context_engine: ContextEngine | None = None,
+    memory: Any | None = None,
 ) -> AgentResult:
     """Run the agent loop — the core while(true) that drives everything.
 
@@ -139,6 +140,19 @@ async def agent_loop(
 
             if on_tool_result:
                 await on_tool_result(result)
+
+            # Extract facts to memory if enabled
+            if memory and not result.is_error and result.content:
+                try:
+                    from rapier.memory.extractor import FactExtractor
+
+                    extractor = FactExtractor(llm)
+                    source_file = tool_call.input.get("path", "")
+                    facts = await extractor.extract(tool_call.name, result.content, source_file)
+                    if facts:
+                        memory.add_facts(facts, source_file=source_file)
+                except Exception:
+                    pass  # Memory extraction is best-effort
 
             # Append tool result
             history.append(
