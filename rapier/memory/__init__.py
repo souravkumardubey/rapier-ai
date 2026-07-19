@@ -5,8 +5,8 @@
 
 """rapier-ai — memory package."""
 
-# Phase 7 will implement:
-# - KnowledgeGraph
-# - MemoryStore (SQLite)
-# - VectorRecall
-# - FactExtractor
+from rapier.memory.graph import KnowledgeGraph
+from rapier.memory.store import MemoryStore
+from rapier.memory.types import Fact, Topic
+
+__all__ = ["Fact", "KnowledgeGraph", "MemoryStore", "Topic"]
