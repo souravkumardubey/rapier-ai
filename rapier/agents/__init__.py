@@ -5,8 +5,7 @@
 
 """rapier-ai — agents package."""
 
-# Phase 6 will implement:
-# - Coordinator
-# - Coder agent
-# - Researcher agent
-# - Verifier agent
+from rapier.agents.base import Agent, AgentConfig
+from rapier.agents.coordinator import Coordinator, TaskResult
+
+__all__ = ["Agent", "AgentConfig", "Coordinator", "TaskResult"]
