@@ -15,14 +15,13 @@ from rapier.tools.base import BaseTool, register_tool
 
 @register_tool
 class TaskTool(BaseTool):
-    """Spawn a sub-agent for a specific task."""
+    """Delegate a task to the multi-agent coordinator."""
 
     name = "task"
     description = "Delegate a focused task to a sub-agent with isolated context"
 
-    def __init__(self, llm_client: Any = None, tools: dict[str, Any] | None = None):
-        self.llm_client = llm_client
-        self.tools = tools or {}
+    def __init__(self, coordinator: Any | None = None):
+        self.coordinator = coordinator
 
     def get_schema(self) -> ToolDefinition:
         return ToolDefinition(
@@ -45,7 +44,20 @@ class TaskTool(BaseTool):
         )
 
     async def execute(self, input: dict[str, Any]) -> str:
-        # Phase 6 will implement full sub-agent spawning
-        # For now, return a placeholder
+        if not self.coordinator:
+            return "Error: Multi-agent system not initialized. Run with --multi-agent flag."
+
         description = input["description"]
-        return f"[Task tool placeholder] Would spawn sub-agent for: {description}"
+        prompt = input["prompt"]
+
+        result = await self.coordinator.execute(task=prompt)
+
+        status = "PASSED" if result.passed else "FAILED"
+        output = f"[Task {status}] {description}\n"
+        output += f"Rounds: {result.rounds}\n"
+        if result.content:
+            output += f"\nResult:\n{result.content}"
+        if result.verification_issues:
+            output += "\n\nVerification issues:\n" + "\n".join(result.verification_issues)
+
+        return output

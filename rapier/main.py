@@ -43,6 +43,7 @@ Current working directory: {cwd}"""
 @click.option("--budget", default="standard", help="Budget profile (quick/standard/deep)")
 @click.option("--max-turns", default=50, help="Maximum iterations")
 @click.option("--no-tools", is_flag=True, help="Disable tool execution (chat only)")
+@click.option("--multi-agent", is_flag=True, help="Enable multi-agent orchestration")
 def cli(
     provider: str,
     model: str | None,
@@ -50,31 +51,56 @@ def cli(
     budget: str,
     max_turns: int,
     no_tools: bool,
+    multi_agent: bool,
 ) -> None:
     """rapier — a loop-engineered coding agent."""
+    agent_mode = "multi-agent" if multi_agent else "single"
     console.print(
         Panel(
             f"[bold]rapier-ai[/bold] v{__version__}\n"
-            f"Provider: {provider} | Tools: {'off' if no_tools else 'on'}\n"
+            f"Provider: {provider} | Mode: {agent_mode} | Tools: {'off' if no_tools else 'on'}\n"
             f"Type [cyan]/help[/cyan] for commands, [cyan]/quit[/cyan] to exit",
-            title="🗡️  rapier-ai",
+            title="rapier-ai",
             border_style="cyan",
         )
     )
 
     if goal:
-        asyncio.run(_run_goal(goal, provider, model, budget, max_turns, no_tools))
+        asyncio.run(_run_goal(goal, provider, model, budget, max_turns, no_tools, multi_agent))
     else:
-        asyncio.run(_run_repl(provider, model, max_turns, no_tools))
+        asyncio.run(_run_repl(provider, model, max_turns, no_tools, multi_agent))
 
 
-async def _run_repl(provider: str, model: str | None, max_turns: int, no_tools: bool) -> None:
+async def _run_repl(
+    provider: str,
+    model: str | None,
+    max_turns: int,
+    no_tools: bool,
+    multi_agent: bool = False,
+) -> None:
     """Run interactive REPL with full agent loop."""
     from rapier.llm import get_client
 
     llm = get_client(provider, model)
     tools = {} if no_tools else get_all_tools()
     system_prompt = SYSTEM_PROMPT.format(cwd=Path.cwd())
+
+    # Wire up multi-agent if enabled
+    coordinator = None
+    if multi_agent:
+        from rapier.agents.coordinator import Coordinator
+        from rapier.agents.coder import create_coder
+        from rapier.agents.researcher import create_researcher
+        from rapier.agents.verifier import create_verifier
+
+        coordinator = Coordinator(
+            researcher=create_researcher(llm, tools),
+            coder=create_coder(llm, tools),
+            verifier=create_verifier(llm, tools),
+        )
+        # Update task tool with coordinator
+        if "task" in tools:
+            tools["task"].coordinator = coordinator
 
     # Track conversation history across turns
     conversation_history: list[dict] = []
@@ -156,6 +182,7 @@ async def _run_goal(
     budget: str,
     max_turns: int,
     no_tools: bool,
+    multi_agent: bool = False,
 ) -> None:
     """Run autonomous goal loop with budget tracking."""
     from rapier.llm import get_client
@@ -164,6 +191,22 @@ async def _run_goal(
     llm = get_client(provider, model)
     tools = {} if no_tools else get_all_tools()
     system_prompt = SYSTEM_PROMPT.format(cwd=Path.cwd())
+
+    # Wire up multi-agent if enabled
+    coordinator = None
+    if multi_agent:
+        from rapier.agents.coordinator import Coordinator
+        from rapier.agents.coder import create_coder
+        from rapier.agents.researcher import create_researcher
+        from rapier.agents.verifier import create_verifier
+
+        coordinator = Coordinator(
+            researcher=create_researcher(llm, tools),
+            coder=create_coder(llm, tools),
+            verifier=create_verifier(llm, tools),
+        )
+        if "task" in tools:
+            tools["task"].coordinator = coordinator
 
     # Create and track the goal
     goal_engine = GoalEngine()
@@ -250,6 +293,7 @@ Set a goal and rapier will iterate until it's done.
 | `--max-turns` | Max iterations (default: 50) |
 | `--no-tools` | Disable tools, chat only |
 | `--budget` | Budget profile: quick/standard/deep |
+| `--multi-agent` | Enable multi-agent orchestration |
 """
     console.print(Markdown(help_text))
 
