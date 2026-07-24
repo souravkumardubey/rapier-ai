@@ -49,6 +49,7 @@ class MockTool:
 
     def get_schema(self):
         from rapier.llm.types import ToolDefinition
+
         return ToolDefinition(name=self.name, description=self.description)
 
     async def execute(self, input):

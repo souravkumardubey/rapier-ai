@@ -213,7 +213,9 @@ async def _run_goal(
     g = goal_engine.create(objective=goal, budget=budget)
 
     console.print(f"\n[bold]Goal:[/bold] {g.objective}")
-    console.print(f"[dim]Budget: {g.budget} | Max turns: {max_turns} | Tools: {'off' if no_tools else 'on'}[/dim]")
+    console.print(
+        f"[dim]Budget: {g.budget} | Max turns: {max_turns} | Tools: {'off' if no_tools else 'on'}[/dim]"
+    )
     console.print("[dim]Starting loop...[/dim]\n")
 
     # Callbacks for live display + budget tracking

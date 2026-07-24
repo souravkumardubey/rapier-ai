@@ -39,17 +39,15 @@ class MemoryStore:
             "embedding BLOB"
             ")"
         )
-        self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_facts_topic ON facts(topic)"
-        )
-        self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_facts_concept ON facts(concept)"
-        )
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_facts_topic ON facts(topic)")
+        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_facts_concept ON facts(concept)")
         self._conn.commit()
 
     def store(self, fact: Fact) -> None:
         """Store a fact."""
-        embedding_bytes = _serialize_embedding(fact.embedding) if fact.embedding is not None else None
+        embedding_bytes = (
+            _serialize_embedding(fact.embedding) if fact.embedding is not None else None
+        )
         self._conn.execute(
             "INSERT OR REPLACE INTO facts "
             "(id, topic, concept, fact, source_file, created_at, embedding) "

@@ -21,7 +21,9 @@ from rapier.llm.types import LLMResponse, Usage
 
 class MockLLM:
     async def chat(self, messages, tools, system=None, model=None):
-        return LLMResponse(content="ok", tool_calls=[], usage=Usage(input_tokens=5, output_tokens=2))
+        return LLMResponse(
+            content="ok", tool_calls=[], usage=Usage(input_tokens=5, output_tokens=2)
+        )
 
 
 class MockTool:
@@ -31,6 +33,7 @@ class MockTool:
 
     def get_schema(self):
         from rapier.llm.types import ToolDefinition
+
         return ToolDefinition(name=self.name, description=self.description)
 
     async def execute(self, input):

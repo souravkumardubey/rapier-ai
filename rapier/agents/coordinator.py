@@ -77,9 +77,8 @@ class Coordinator:
             # Code
             code_prompt = f"Implement: {task}\n\nResearch findings:\n{research}"
             if issues:
-                code_prompt += (
-                    "\n\nFix these issues from previous verification:\n"
-                    + "\n".join(issues)
+                code_prompt += "\n\nFix these issues from previous verification:\n" + "\n".join(
+                    issues
                 )
 
             code_result = await self.coder.run(

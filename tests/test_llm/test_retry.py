@@ -207,6 +207,7 @@ class TestWithRetry:
     @pytest.mark.asyncio
     async def test_no_args_function(self):
         """Test retry with a function that takes no arguments."""
+
         async def ok_fn():
             return "ok"
 

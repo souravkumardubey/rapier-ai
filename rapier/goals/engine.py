@@ -115,9 +115,7 @@ class GoalEngine:
         goal = self._goals.get(goal_id)
         if goal is None:
             return False
-        return goal.budget.is_exhausted(
-            goal.tokens_used, goal.turns_used, goal.hours_elapsed
-        )
+        return goal.budget.is_exhausted(goal.tokens_used, goal.turns_used, goal.hours_elapsed)
 
     def complete(self, goal_id: str, result: str | None = None) -> Goal | None:
         """Mark a goal as complete."""
@@ -157,9 +155,7 @@ class GoalEngine:
         if goal is None:
             return "No goal found"
 
-        remaining = goal.budget.remaining(
-            goal.tokens_used, goal.turns_used, goal.hours_elapsed
-        )
+        remaining = goal.budget.remaining(goal.tokens_used, goal.turns_used, goal.hours_elapsed)
 
         parts = [
             f"Goal: {goal.objective}",

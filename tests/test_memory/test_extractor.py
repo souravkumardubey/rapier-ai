@@ -100,7 +100,11 @@ class TestFactExtractor:
         extractor = FactExtractor(llm)
 
         tool_results = [
-            ("read_file", "pytest config in pyproject.toml with all the settings", "pyproject.toml"),
+            (
+                "read_file",
+                "pytest config in pyproject.toml with all the settings",
+                "pyproject.toml",
+            ),
             ("read_file", "another file content here for testing purposes today", "setup.cfg"),
         ]
 

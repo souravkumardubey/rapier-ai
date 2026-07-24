@@ -43,11 +43,13 @@ async def test_write_file(tmp_path):
 @pytest.mark.asyncio
 async def test_edit_file(tmp_file):
     tool = EditFileTool()
-    result = await tool.execute({
-        "path": str(tmp_file),
-        "old_string": "return 'world'",
-        "new_string": "return 'rapier'",
-    })
+    result = await tool.execute(
+        {
+            "path": str(tmp_file),
+            "old_string": "return 'world'",
+            "new_string": "return 'rapier'",
+        }
+    )
     assert "OK" in result
     assert "rapier" in tmp_file.read_text()
 
@@ -55,9 +57,11 @@ async def test_edit_file(tmp_file):
 @pytest.mark.asyncio
 async def test_edit_file_not_found():
     tool = EditFileTool()
-    result = await tool.execute({
-        "path": "/nonexistent/file.py",
-        "old_string": "a",
-        "new_string": "b",
-    })
+    result = await tool.execute(
+        {
+            "path": "/nonexistent/file.py",
+            "old_string": "a",
+            "new_string": "b",
+        }
+    )
     assert "Error" in result

@@ -43,6 +43,7 @@ class MockTool:
 
     def get_schema(self):
         from rapier.llm.types import ToolDefinition
+
         return ToolDefinition(name=self.name, description=self.description)
 
     async def execute(self, input):
@@ -50,7 +51,10 @@ class MockTool:
 
 
 def _make_tools() -> dict[str, Any]:
-    return {t.name: t for t in [MockTool("read_file"), MockTool("write_file"), MockTool("bash"), MockTool("grep")]}
+    return {
+        t.name: t
+        for t in [MockTool("read_file"), MockTool("write_file"), MockTool("bash"), MockTool("grep")]
+    }
 
 
 # ── Tests ────────────────────────────────────────────────────────────

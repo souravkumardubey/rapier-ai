@@ -53,9 +53,7 @@ class BashTool(BaseTool):
             )
 
             try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(), timeout=self.timeout
-                )
+                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=self.timeout)
             except asyncio.TimeoutError:
                 process.kill()
                 await process.communicate()
@@ -78,9 +76,7 @@ class BashTool(BaseTool):
             if len(lines) > 500:
                 truncated = "\n".join(lines[:250])
                 tail = "\n".join(lines[-250:])
-                output = (
-                    f"{truncated}\n\n... ({len(lines) - 500} lines omitted) ...\n\n{tail}"
-                )
+                output = f"{truncated}\n\n... ({len(lines) - 500} lines omitted) ...\n\n{tail}"
 
             return output
 

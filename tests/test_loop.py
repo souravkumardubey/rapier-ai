@@ -38,9 +38,13 @@ class MockTool:
 @pytest.mark.asyncio
 async def test_agent_loop_simple_response():
     """Agent loop returns LLM response when no tool calls."""
-    mock_llm = MockLLM([
-        LLMResponse(content="Hello! I can help you.", usage=Usage(input_tokens=10, output_tokens=5)),
-    ])
+    mock_llm = MockLLM(
+        [
+            LLMResponse(
+                content="Hello! I can help you.", usage=Usage(input_tokens=10, output_tokens=5)
+            ),
+        ]
+    )
 
     result = await agent_loop(
         prompt="Hi",
@@ -61,19 +65,21 @@ async def test_agent_loop_simple_response():
 async def test_agent_loop_with_tool_call():
     """Agent loop executes tool calls and feeds results back."""
     mock_tool = MockTool("test_tool", "tool output here")
-    mock_llm = MockLLM([
-        # First call: request tool
-        LLMResponse(
-            content=None,
-            tool_calls=[ToolCall(id="tc1", name="test_tool", input={})],
-            usage=Usage(input_tokens=20, output_tokens=10),
-        ),
-        # Second call: respond after seeing tool result
-        LLMResponse(
-            content="The tool returned: tool output here",
-            usage=Usage(input_tokens=30, output_tokens=15),
-        ),
-    ])
+    mock_llm = MockLLM(
+        [
+            # First call: request tool
+            LLMResponse(
+                content=None,
+                tool_calls=[ToolCall(id="tc1", name="test_tool", input={})],
+                usage=Usage(input_tokens=20, output_tokens=10),
+            ),
+            # Second call: respond after seeing tool result
+            LLMResponse(
+                content="The tool returned: tool output here",
+                usage=Usage(input_tokens=30, output_tokens=15),
+            ),
+        ]
+    )
 
     result = await agent_loop(
         prompt="Run the test tool",
@@ -93,18 +99,20 @@ async def test_agent_loop_with_tool_call():
 @pytest.mark.asyncio
 async def test_agent_loop_hits_iteration_limit():
     """Agent loop stops at max iterations."""
-    mock_llm = MockLLM([
-        LLMResponse(
-            content=None,
-            tool_calls=[ToolCall(id="tc1", name="test_tool", input={})],
-            usage=Usage(input_tokens=10, output_tokens=5),
-        ),
-        LLMResponse(
-            content=None,
-            tool_calls=[ToolCall(id="tc2", name="test_tool", input={})],
-            usage=Usage(input_tokens=10, output_tokens=5),
-        ),
-    ])
+    mock_llm = MockLLM(
+        [
+            LLMResponse(
+                content=None,
+                tool_calls=[ToolCall(id="tc1", name="test_tool", input={})],
+                usage=Usage(input_tokens=10, output_tokens=5),
+            ),
+            LLMResponse(
+                content=None,
+                tool_calls=[ToolCall(id="tc2", name="test_tool", input={})],
+                usage=Usage(input_tokens=10, output_tokens=5),
+            ),
+        ]
+    )
 
     result = await agent_loop(
         prompt="Keep going forever",
@@ -122,17 +130,19 @@ async def test_agent_loop_hits_iteration_limit():
 @pytest.mark.asyncio
 async def test_agent_loop_unknown_tool():
     """Agent loop handles unknown tool calls gracefully."""
-    mock_llm = MockLLM([
-        LLMResponse(
-            content=None,
-            tool_calls=[ToolCall(id="tc1", name="nonexistent_tool", input={})],
-            usage=Usage(input_tokens=10, output_tokens=5),
-        ),
-        LLMResponse(
-            content="Got an error about unknown tool",
-            usage=Usage(input_tokens=10, output_tokens=5),
-        ),
-    ])
+    mock_llm = MockLLM(
+        [
+            LLMResponse(
+                content=None,
+                tool_calls=[ToolCall(id="tc1", name="nonexistent_tool", input={})],
+                usage=Usage(input_tokens=10, output_tokens=5),
+            ),
+            LLMResponse(
+                content="Got an error about unknown tool",
+                usage=Usage(input_tokens=10, output_tokens=5),
+            ),
+        ]
+    )
 
     result = await agent_loop(
         prompt="Use nonexistent tool",
