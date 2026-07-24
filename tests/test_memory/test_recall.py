@@ -8,8 +8,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -44,9 +43,19 @@ class MockSentenceTransformer:
     """Mock SentenceTransformer that doesn't need network."""
 
     def encode(self, text: str, convert_to_numpy: bool = True) -> np.ndarray:
-        # Return a deterministic fake embedding based on text hash
-        rng = np.random.RandomState(hash(text) % 2**31)
-        return rng.randn(384).astype(np.float32)
+        import hashlib
+
+        # Build a deterministic embedding from character-level features so that
+        # texts sharing characters get positively-correlated vectors.
+        vec = np.zeros(384, dtype=np.float32)
+        for _i, ch in enumerate(text):
+            seed = int(hashlib.md5(ch.encode()).hexdigest()[:8], 16) % (2**31)
+            rng = np.random.RandomState(seed)
+            vec += rng.randn(384).astype(np.float32)
+        norm = np.linalg.norm(vec)
+        if norm > 0:
+            vec /= norm
+        return vec
 
 
 # ── Tests ────────────────────────────────────────────────────────────
